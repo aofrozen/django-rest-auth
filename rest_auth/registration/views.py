@@ -70,7 +70,7 @@ class RegisterView(CreateAPIView):
           data={
             'secret': secret_key,
             'response': request.data['g-recaptcha-response'],
-            'remoteip': get_client_ip(request),  # Optional
+            'remoteip': ip,  # Optional
             }
         )
         if r.json()['success']:
