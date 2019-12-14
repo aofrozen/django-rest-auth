@@ -79,9 +79,8 @@ class RegisterView(CreateAPIView):
           user = self.perform_create(serializer)
           headers = self.get_success_headers(serializer.data)
           return Response(self.get_response_data(user),
-                          status=status.HTTP_201_CREATED,
-                          headers=headers)
-        return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE, headers=headers)
+                          status=status.HTTP_201_CREATED)
+        return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
     def perform_create(self, serializer):
         user = serializer.save(self.request)
