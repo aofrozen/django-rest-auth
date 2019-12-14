@@ -44,7 +44,6 @@ class RegisterView(CreateAPIView):
     @sensitive_post_parameters_m
     def dispatch(self, *args, **kwargs):
         return super(RegisterView, self).dispatch(*args, **kwargs)
-
     def get_response_data(self, user):
         if allauth_settings.EMAIL_VERIFICATION == \
                 allauth_settings.EmailVerificationMethod.MANDATORY:
@@ -61,6 +60,11 @@ class RegisterView(CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         secret_key = settings.RECAPTCHA_SECRET_KEY
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+          ip = x_forwarded_for.split(',')[0]
+        else:
+          ip = request.META.get('REMOTE_ADDR')
         r = requests.post(
           'https://www.google.com/recaptcha/api/siteverify',
           data={
