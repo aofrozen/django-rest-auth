@@ -60,14 +60,24 @@ class RegisterView(CreateAPIView):
             return TokenSerializer(user.auth_token).data
 
     def create(self, request, *args, **kwargs):
+        secret_key = settings.RECAPTCHA_SECRET_KEY
+        r = requests.post(
+          'https://www.google.com/recaptcha/api/siteverify',
+          data={
+            'secret': secret_key,
+            'response': request.data['g-recaptcha-response'],
+            'remoteip': get_client_ip(request),  # Optional
+            }
+        )
+      if r.json()['success']:
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-
         return Response(self.get_response_data(user),
                         status=status.HTTP_201_CREATED,
                         headers=headers)
+      return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE, headers=headers)
 
     def perform_create(self, serializer):
         user = serializer.save(self.request)
