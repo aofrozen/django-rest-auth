@@ -181,15 +181,31 @@ class PasswordResetView(GenericAPIView):
 
     def post(self, request, *args, **kwargs):
         # Create a serializer with request.data
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        serializer.save()
-        # Return the success message with OK HTTP status
-        return Response(
-            {"detail": _("Password reset e-mail has been sent.")},
-            status=status.HTTP_200_OK
+        secret_key = settings.RECAPTCHA_SECRET_KEY
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+          ip = x_forwarded_for.split(',')[0]
+        else:
+          ip = request.META.get('REMOTE_ADDR')
+        r = requests.post(
+          'https://www.google.com/recaptcha/api/siteverify',
+          data={
+            'secret': secret_key,
+            'response': request.data['g-recaptcha-response'],
+            'remoteip': ip,  # Optional
+            }
         )
+        if r.json()['success']:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+
+            serializer.save()
+            # Return the success message with OK HTTP status
+            return Response(
+                {"detail": _("Password reset e-mail has been sent.")},
+                status=status.HTTP_200_OK
+            )
+         return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class PasswordResetConfirmView(GenericAPIView):
@@ -209,28 +225,13 @@ class PasswordResetConfirmView(GenericAPIView):
         return super(PasswordResetConfirmView, self).dispatch(*args, **kwargs)
 
     def post(self, request, *args, **kwargs):
-        secret_key = settings.RECAPTCHA_SECRET_KEY
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-          ip = x_forwarded_for.split(',')[0]
-        else:
-          ip = request.META.get('REMOTE_ADDR')
-        r = requests.post(
-          'https://www.google.com/recaptcha/api/siteverify',
-          data={
-            'secret': secret_key,
-            'response': request.data['g-recaptcha-response'],
-            'remoteip': ip,  # Optional
-            }
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"detail": _("Password has been reset with the new password.")}
         )
-        if r.json()['success']:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            return Response(
-                {"detail": _("Password has been reset with the new password.")}
-            )
-        return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+
 
 
 class PasswordChangeView(GenericAPIView):
