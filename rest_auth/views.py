@@ -205,7 +205,7 @@ class PasswordResetView(GenericAPIView):
                 {"detail": _("Password reset e-mail has been sent.")},
                 status=status.HTTP_200_OK
             )
-         return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
+        return Response(data={'error': 'ReCAPTCHA not verified.'}, status=status.HTTP_406_NOT_ACCEPTABLE)
 
 
 class PasswordResetConfirmView(GenericAPIView):
